@@ -11,7 +11,7 @@ cubed = user_num ** 3
 print(user_num, 'squared is', squared)
 print('And', user_num, 'cubed is', cubed, '!!')
 
-user_num2 = int(input('Enter another integer:\n'))
+user_num1 = int(input('Enter another integer:\n'))
 
-print(user_num, '+', user_num2, 'is', user_num + user_num2)
-print(user_num, '*', user_num2, 'is', user_num * user_num2)
+print(user_num, '+', user_num1, 'is', user_num + user_num1)
+print(user_num, '*', user_num1, 'is', user_num * user_num1)
