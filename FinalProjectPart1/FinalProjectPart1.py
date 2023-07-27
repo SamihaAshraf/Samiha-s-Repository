@@ -1,6 +1,7 @@
 #Samiha Ashraf
 #1884227
 
+#Project Part 1
 #Code starts here
 
 import csv
@@ -18,91 +19,76 @@ class InventoryItem:
         }
         self.__dict__.update(item_info)
 
-def load_manufacturer_data(filename):
+def load_data(filename):
+    data = {}
     with open(filename, "r") as csvfile:
         reader = csv.reader(csvfile, delimiter=",")
-        items_dic = {}
         for row in reader:
             if len(row) > 0:
                 item_id = row[0]
-                manufacturer = row[1]
-                item_type = row[2]
-                damaged = row[3]
-                items_dic[item_id] = [manufacturer, item_type, damaged]
-        return items_dic
+                if len(row) >= 4:
+                    manufacturer, item_type, damaged = row[1:4]
+                else:
+                    manufacturer, item_type, damaged = "", "", ""
+                service_date = row[4] if len(row) > 4 else ""
+                data[item_id] = [manufacturer, item_type, damaged, service_date]
+    return data
 
-def load_price_list(filename):
-    with open(filename, "r") as csvfile:
-        reader = csv.reader(csvfile, delimiter=",")
-        prices = {}
-        for row in reader:
-            if len(row) > 0:
-                item_id = row[0]
-                price = row[1]
-                prices[item_id] = price
-        return prices
 
-def load_service_dates_data(filename):
-     with open(filename, "r") as csvfile:
-         reader = csv.reader(csvfile, delimiter=",")
-         service_dates = {}
-         for row in reader:
-             if len(row) > 0:
-                 item_id = row[0]
-                 service_date = row[1]
-                 service_dates[item_id] = service_date
-         return service_dates
+def get_price(item):
+    return item.price
 
 def generate_full_inventory_report(items):
-    with open("FullInventoryReport.csv", "w") as csvfile:
-        items = sorted(items, key=lambda item: item.manufacturer)
+    with open("FullInventoryReport.csv", "w", newline='') as csvfile:
+        items.sort(key=get_manufacturer)
         writer = csv.writer(csvfile, delimiter=",")
         for item in items:
             writer.writerow([item.item_id, item.manufacturer, item.item_type, item.price, item.service_date, item.damaged])
 
 def generate_item_type_inventory_report(items):
-    items = sorted(items, key=lambda item: item.item_id)
-    item_types = list(set(item.item_type for item in items))
+    items.sort(key=get_item_id)
+    item_types = set(item.item_type for item in items)
 
     for item_type in item_types:
-        with open(f"{item_type}InventoryReport.csv", "w") as csvfile:
+        filename = f"{item_type}InventoryReport.csv"
+        with open(filename, "w", newline='') as csvfile:
             writer = csv.writer(csvfile, delimiter=",")
             for item in items:
                 if item.item_type == item_type:
                     writer.writerow([item.item_id, item.manufacturer, item.price, item.service_date, item.damaged])
 
 def generate_past_service_date_inventory_report(items):
-    with open("PastServiceDateInventoryReport.csv", "w") as csvfile:
+    with open("PastServiceDateInventoryReport.csv", "w", newline='') as csvfile:
         writer = csv.writer(csvfile, delimiter=",")
         today = datetime.datetime.today()
-        items = sorted(items, key=lambda item: datetime.datetime.strptime(item.service_date, '%m/%d/%Y'), reverse=True)
         for item in items:
-            date = datetime.datetime.strptime(item.service_date, '%m/%d/%Y')
-            if date < today:
+            date = datetime.datetime.strptime(item.service_date, '%m/%d/%Y') if item.service_date else None
+            if date and date < today:
                 writer.writerow([item.item_id, item.manufacturer, item.item_type, item.price, item.service_date, item.damaged])
 
 def generate_damaged_inventory_report(items):
-    with open("DamagedInventoryReport.csv", "w") as csvfile:
+    damaged_items = sorted(items, key=get_price, reverse=True)
+    with open("DamagedInventoryReport.csv", "w", newline='') as csvfile:
         writer = csv.writer(csvfile, delimiter=",")
-        damaged_items = sorted(items, key=lambda item: item.price, reverse=True)
         for item in damaged_items:
             if item.damaged:
                 writer.writerow([item.item_id, item.manufacturer, item.item_type, item.price, item.service_date, item.damaged])
 
+def get_manufacturer(item):
+    return item.manufacturer
+
+def get_item_id(item):
+    return item.item_id
+
 if __name__ == "__main__":
     inventory_items = []
-    price_list_dic = load_price_list('PriceList.csv')
-    service_dates_dic = load_service_dates_data('ServiceDatesList.csv')
-    manufacturer_dic = load_manufacturer_data('ManufacturerList.csv')
+    price_list_dic = load_data('PriceList.csv')
+    service_dates_dic = load_data('ServiceDatesList.csv')
+    manufacturer_dic = load_data('ManufacturerList.csv')
 
     for item_id, data in manufacturer_dic.items():
-        manufacturer, item_type, damaged = data
-        price = ""
-        service_date = ""
-        if item_id in price_list_dic.keys():
-            price = price_list_dic[item_id]
-        if item_id in service_dates_dic.keys():
-            service_date = service_dates_dic[item_id]
+        manufacturer, item_type, damaged, service_date = data
+        price = price_list_dic.get(item_id, "")
         item = InventoryItem(item_id, manufacturer, item_type, price, service_date, damaged)
         inventory_items.append(item)
 
